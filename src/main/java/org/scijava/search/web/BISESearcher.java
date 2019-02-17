@@ -29,24 +29,21 @@
 
 package org.scijava.search.web;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.URL;
 import java.net.URLEncoder;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
-
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.scijava.log.LogService;
 import org.scijava.plugin.Parameter;
+import org.scijava.plugin.Plugin;
 import org.scijava.search.SearchResult;
 import org.scijava.search.Searcher;
-import org.w3c.dom.Document;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-import org.xml.sax.SAXException;
 
 /**
  * A searcher for the <a href="http://biii.eu/search">Bio-Imaging Search
@@ -54,14 +51,10 @@ import org.xml.sax.SAXException;
  *
  * @author Robert Haase (MPI-CBG)
  */
-//@Plugin(type = Searcher.class, enabled = false)
+@Plugin(type = Searcher.class, enabled = false)
 public class BISESearcher implements Searcher {
 
 	private final ArrayList<SearchResult> searchResults = new ArrayList<>();
-
-	private String currentHeading;
-	private String currentLink;
-	private String currentContent;
 
 	@Parameter
 	private LogService log;
@@ -76,96 +69,91 @@ public class BISESearcher implements Searcher {
 		searchResults.clear();
 
 		try {
-			final URL url = new URL("http://biii.eu/search?search_api_fulltext=" +
-				URLEncoder.encode(text, "utf-8") + "&source=imagej");
+			final URL url = new URL("http://test.biii.eu/searchjsonexport?search_api_fulltext=" + URLEncoder.encode(text, "utf-8") + "&_format=json&source=imagej");
 
-			final DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-			final DocumentBuilder db = dbf.newDocumentBuilder();
-			final Document doc = db.parse(url.openStream());
+			StringBuilder contentBuilder = new StringBuilder();
 
-			parse(doc.getDocumentElement());
-			saveLastItem();
+			BufferedReader in = new BufferedReader(new InputStreamReader(url.openStream()));
+
+			String inputLine;
+			while ((inputLine = in.readLine()) != null) {
+				contentBuilder.append(inputLine);
+			}
+			in.close();
+
+			// JSONParser parser = new JSONParser(contentBuilder.toString(), , true);
+			JSONArray root = new JSONArray(contentBuilder.toString());
+			parse(root);
 		}
 		catch (final IOException e) {
 			log.debug(e);
 		}
-		catch (final ParserConfigurationException e) {
-			log.debug(e);
-		}
-		catch (final SAXException e) {
+		catch (JSONException e) {
 			log.debug(e);
 		}
 		return searchResults;
 	}
 
-	private void parseHeading(final Node node) {
-		if (node.getTextContent() != null && //
-			node.getTextContent().trim().length() > 0)
-		{
-			currentHeading = node.getTextContent();
-		}
-		if (node.getAttributes() != null) {
-			final Node href = node.getAttributes().getNamedItem("href");
-			if (href != null) {
-				currentLink = "http://biii.eu" + href.getNodeValue();
-			}
-		}
+	private void parse(JSONArray root) {
 
-		final NodeList nodeList = node.getChildNodes();
-		for (int i = 0; i < nodeList.getLength(); i++) {
-			final Node childNode = nodeList.item(i);
-			parseHeading(childNode);
+		for (int count = 0;; count++) {
+
+			JSONObject obj = null;
+			try {
+				obj = root.getJSONObject(count);
+			} catch (JSONException e) {
+				break;
+			}
+			if (obj == null) {
+				break;
+			}
+
+			final String title = readString(obj, "title");
+			final String relevance = readString(obj, "search_api_relevance");
+			final String link = readString(obj, "link");
+			final String summary = readString(obj, "summary");
+			final String thumbnail = readString(obj, "thumbnail");
+
+			final HashMap properties = new HashMap();
+			properties.put("Title", title);
+			properties.put("Relevance", relevance);
+			properties.put("Link", link);
+			properties.put("Summary", summary);
+			properties.put("Thumbail", thumbnail);
+
+			SearchResult result = new WebSearchResult(title, link, summary, thumbnail, properties);
+
+			searchResults.add(result);
+
 		}
 	}
 
-	private void parseContent(final Node node) {
-		if (node.getTextContent() != null) {
-			currentContent = node.getTextContent();
+	private String readString(JSONObject obj, String key) {
+		String result = "";
+		try {
+			result = obj.getString(key);
+		} catch (JSONException e) {
+			System.out.print("Error reading " + key);
 		}
-
-		final NodeList nodeList = node.getChildNodes();
-		for (int i = 0; i < nodeList.getLength(); i++) {
-			final Node childNode = nodeList.item(i);
-			parse(childNode);
-		}
+		return result;
 	}
 
-	private void saveLastItem() {
-		if (currentHeading != null && currentHeading.length() > 0) {
-			searchResults.add(new WebSearchResult(currentHeading, //
-				currentLink, currentContent));
+
+	private int readInteger(JSONObject obj, String key) {
+		int result = 0;
+		try {
+			result = obj.getInt(key);
+		} catch (JSONException e) {
+			System.out.print("Error reading " + key);
 		}
-		currentHeading = "";
-		currentLink = "";
-		currentContent = "";
+		return result;
 	}
 
-	private void parse(final Node node) {
-		if (node.getNodeName().equals("div")) {
-			final Node item = node.getAttributes() == null ? //
-				null : node.getAttributes().getNamedItem("class");
-			if (item != null && item.getNodeValue().equals(
-				"views-field views-field-title"))
-			{
-
-				if (currentHeading != null) {
-					saveLastItem();
-				}
-				parseHeading(node);
-				return;
-			}
-			if (item != null && item.getNodeValue().equals(
-				"views-field views-field-search-api-excerpt"))
-			{
-				parseContent(node);
-				return;
-			}
-		}
-
-		final NodeList nodeList = node.getChildNodes();
-		for (int i = 0; i < nodeList.getLength(); i++) {
-			final Node childNode = nodeList.item(i);
-			parse(childNode);
+	// for testing
+	public static void main(String... args) {
+		List<SearchResult> results = new BISESearcher().search("neuro", false);
+		for (SearchResult result : results) {
+			System.out.println(result.properties().get("Title"));
 		}
 	}
 }
