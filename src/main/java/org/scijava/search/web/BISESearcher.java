@@ -110,7 +110,7 @@ public class BISESearcher implements Searcher {
 
 			final String title = readString(obj, "title");
 			final String relevance = readString(obj, "search_api_relevance");
-			final String link = readString(obj, "link");
+			final String link = "http://test.biii.eu/" + readString(obj, "title").replace(" ", "-");
 			final String summary = readString(obj, "body");
 			final String thumbnail = "http://test.biii.eu/" + readString(obj, "field_image");
 
