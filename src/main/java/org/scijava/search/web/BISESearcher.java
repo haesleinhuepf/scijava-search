@@ -69,7 +69,7 @@ public class BISESearcher implements Searcher {
 		searchResults.clear();
 
 		try {
-			final URL url = new URL("http://test.biii.eu/searchjsonexport?search_api_fulltext=" + URLEncoder.encode(text, "utf-8") + "&_format=json&source=imagej");
+			final URL url = new URL("http://biii.eu/searchjsonexport?search_api_fulltext=" + URLEncoder.encode(text, "utf-8") + "&_format=json&source=imagej");
 
 			StringBuilder contentBuilder = new StringBuilder();
 
@@ -110,9 +110,9 @@ public class BISESearcher implements Searcher {
 
 			final String title = readString(obj, "title");
 			final String relevance = readString(obj, "search_api_relevance");
-			final String link = "http://test.biii.eu/" + readString(obj, "title").replace(" ", "-");
+			final String link = "http://biii.eu/" + readString(obj, "title").replace(" ", "-");
 			final String summary = readString(obj, "body");
-			final String thumbnail = "http://test.biii.eu/" + readString(obj, "field_image");
+			final String thumbnail = "http://biii.eu/" + readString(obj, "field_image");
 
 			final HashMap properties = new HashMap();
 			properties.put("Title", title);
