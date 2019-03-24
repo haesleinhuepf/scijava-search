@@ -72,7 +72,7 @@ public class BISESearcher implements Searcher {
 		searchResults.clear();
 
 		try {
-			final URL url = new URL("http://biii.eu/searchjsonexport?search_api_fulltext=" + URLEncoder.encode(text, "utf-8") + "+imagej&_format=json&source=imagej");
+			final URL url = new URL("http://biii.eu/searchjsonexport?search_api_fulltext=(?=" + URLEncoder.encode(text, "utf-8") + ")(?=ImageJ)&_format=json&source=imagej");
 
 			StringBuilder contentBuilder = new StringBuilder();
 
