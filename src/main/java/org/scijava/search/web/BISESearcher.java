@@ -115,7 +115,7 @@ public class BISESearcher implements Searcher {
 			final String link = "http://biii.eu/" + readString(obj, "title").replace(" ", "-");
 			final String summary = readString(obj, "body");
 
-			SearchResult result = new WebSearchResult(title, link, summary, DEFAULT_ICON, null);
+			SearchResult result = new BISESearchResult(title, link, summary, DEFAULT_ICON, null);
 
 			searchResults.add(result);
 
