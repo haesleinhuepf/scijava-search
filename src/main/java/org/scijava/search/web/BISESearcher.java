@@ -34,7 +34,8 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.net.URLEncoder;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -53,6 +54,8 @@ import org.scijava.search.Searcher;
  */
 @Plugin(type = Searcher.class, enabled = false)
 public class BISESearcher implements Searcher {
+
+	private static final String DEFAULT_ICON = "/icons/search/NEUBIASlogo.png";
 
 	private final ArrayList<SearchResult> searchResults = new ArrayList<>();
 
@@ -109,19 +112,10 @@ public class BISESearcher implements Searcher {
 			}
 
 			final String title = readString(obj, "title");
-			final String relevance = readString(obj, "search_api_relevance");
 			final String link = "http://biii.eu/" + readString(obj, "title").replace(" ", "-");
 			final String summary = readString(obj, "body");
-			final String thumbnail = "http://biii.eu/" + readString(obj, "field_image");
 
-			final HashMap properties = new HashMap();
-			properties.put("Title", title);
-			properties.put("Relevance", relevance);
-			properties.put("Link", link);
-			properties.put("Summary", summary);
-			properties.put("Thumbail", thumbnail);
-
-			SearchResult result = new WebSearchResult(title, link, summary, thumbnail, properties);
+			SearchResult result = new WebSearchResult(title, link, summary, DEFAULT_ICON, null);
 
 			searchResults.add(result);
 
