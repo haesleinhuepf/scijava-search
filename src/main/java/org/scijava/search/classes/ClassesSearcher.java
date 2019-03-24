@@ -49,7 +49,7 @@ import org.scijava.util.Types;
  *
  * @author Curtis Rueden
  */
-@Plugin(type = Searcher.class)
+@Plugin(type = Searcher.class, enabled=false)
 public class ClassesSearcher implements Searcher {
 
 	@Parameter
